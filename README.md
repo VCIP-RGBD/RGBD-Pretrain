@@ -31,9 +31,9 @@ First, you need to prepare the ImageNet-1k dataset.
 We share the depth maps for the ImageNet-1K in the following links:
 
 
-|    |  |
-|  ----  | ----  |
 | [Baidu Netdisk]() | [OneDrive]() |
+|  ----  | ----  |
+
 
 If the share links have any questions, please let me know (bowenyin@mail.nankai.edu.cn). 
 

@@ -8,28 +8,6 @@ from timm.models.registry import register_model
 from timm.models.vision_transformer import _cfg
 import math
 
-# class MLP(nn.Module):
-#     def __init__(self, dim, mlp_ratio=4, norm_cfg=dict(type='SyncBN', requires_grad=True)):
-#         super().__init__()
-
-#         self.norm = LayerNorm(dim, eps=1e-6, data_format="channels_last")
-#         self.fc1 = nn.Linear(dim, dim * mlp_ratio)
-#         self.pos = nn.Conv2d(dim * mlp_ratio, dim * mlp_ratio, 3, padding=1, groups=dim * mlp_ratio)
-#         self.fc2 = nn.Linear(dim * mlp_ratio, dim)
-#         self.act = nn.GELU()
-
-#     def forward(self, x):
-#         x = self.norm(x)
-#         x = self.fc1(x)
-#         x = x.permute(0, 3, 1, 2)
-#         x = self.pos(x) + x
-#         x = x.permute(0, 2, 3, 1)
-#         x = self.act(x)
-#         x = self.fc2(x)
-
-#         return x
-
-
 class MLP(nn.Module):
     def __init__(self, dim, mlp_ratio=4):
         super().__init__()
@@ -53,46 +31,6 @@ class MLP(nn.Module):
         return x
 
 class Attention(nn.Module):
-    def __init__(self, dim, num_head=8, direction=0):
-        super().__init__()
-        self.num_head = num_head
-        self.direction = direction
-        head_dim = dim // num_head
-        self.scale = head_dim ** -0.5
-
-        self.conv = nn.Conv2d(dim, dim, (3, 11), padding=(1, 5), groups=dim)
-        if self.direction == 0:
-            self.conv = nn.Conv2d(dim, dim, (11, 3), padding=(5, 1), groups=dim)
-
-        self.qkv = nn.Linear(dim, dim * 3, bias=False)
-        self.proj = nn.Linear(dim, dim)
-
-    def forward(self, x):
-        B, H, W, C = x.size()
-
-        x = x.permute(0, 3, 1, 2)
-        x = self.conv(x)
-        x = x.permute(0, 2, 3, 1)
-
-        # if self.direction == 0:
-        qkv = self.qkv(x).reshape(B, H, W, 3, self.num_head, C // self.num_head).permute(3, 0, 4, 1, 2, 5)
-        if self.direction != 0:
-            qkv = qkv.transpose(-3, -2)
-        q, k, v = qkv.unbind(0)  # make torchscript happy (cannot use tensor as tuple)
-        
-        attn = (q * self.scale) @ k.transpose(-2, -1)
-        attn = attn.softmax(dim=-1)
-
-        x = (attn @ v).permute(0, 2, 3, 1, 4)
-        if self.direction != 0:
-            x = x.transpose(1, 2)
-        x = x.reshape(B, H, W, C)
-        x = self.proj(x)
-
-        return x
-
-
-class MemoryModulev3(nn.Module):
     def __init__(self, dim, num_head=8, window=7):
         super().__init__()
         self.num_head = num_head
@@ -182,7 +120,7 @@ class Block(nn.Module):
         layer_scale_init_value = 1e-6 
         if block_index>last_block_index:
                 window=0 
-        self.attn = MemoryModulev3(dim, num_head, window=window)
+        self.attn = Attention(dim, num_head, window=window)
             
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
 
@@ -205,7 +143,7 @@ class Block(nn.Module):
         x = x + self.drop_path(self.layer_scale_2.unsqueeze(0).unsqueeze(0) * self.mlp(x))
         return x,x_e
 
-class SCNet(nn.Module):
+class DFormer_model(nn.Module):
     def __init__(self, img_size=224, in_chans=3, num_classes=1000, depths=[3, 3, 9, 3], dims=[96, 192, 384, 768], windows=[7, 7, 7, 7],
                  mlp_ratios=[4, 4, 4, 4],last_block=[50,50,50,50], num_heads=[2, 4, 10, 16], layer_scale_init_value=1e-6, head_init_scale=1., 
                  drop_path_rate=0., drop_rate=0., **kwargs):
@@ -329,16 +267,7 @@ class LayerNorm(nn.Module):
             x = self.weight[:, None, None] * x + self.bias[:, None, None]
             return x
 
-model_urls = {
-    "mixnet_t": "/root/andrewhoux/Projects/van/output/train/20220616-220244-mixnet_t-224/model_best.pth.tar",
-}
-
-
 def load_model_weights(model, arch, kwargs):
-    # url = pretrained #model_urls[arch]
-    # checkpoint = torch.hub.load_state_dict_from_url(
-    #     url=url, map_location="cpu", check_hash=True
-    # )
     checkpoint = torch.load(model_urls[arch], map_location="cpu")
     strict = True
     if "num_classes" in kwargs and kwargs["num_classes"] != 1000:
@@ -349,58 +278,33 @@ def load_model_weights(model, arch, kwargs):
     return model
 
 @register_model
-def rgbdv6_t(pretrained=False, **kwargs):
-    model = SCNet(dims=[32, 64, 128, 256], mlp_ratios=[8, 8, 4, 4], depths=[3, 3, 5, 2], num_heads=[1, 2, 4, 8], windows=[0, 7, 7, 7], **kwargs)
+def DFormer_Tiny(pretrained=False, **kwargs):
+    model = DFormer_model(dims=[32, 64, 128, 256], mlp_ratios=[8, 8, 4, 4], depths=[3, 3, 5, 2], num_heads=[1, 2, 4, 8], windows=[0, 7, 7, 7], **kwargs)
     model.default_cfg = _cfg()
     if pretrained:
-        model = load_model_weights(model, 'scnet', kwargs)
+        model = load_model_weights(model, 'dformer', kwargs)
     return model
-
 
 @register_model
 def DFormer_Small(pretrained=False, **kwargs):
-    model = SCNet(dims=[64, 128, 256, 512], mlp_ratios=[8, 8, 4, 4], depths=[2, 2, 4, 2], num_heads=[1, 2, 4, 8], windows=[0, 7, 7, 7], **kwargs)
+    model = DFormer_model(dims=[64, 128, 256, 512], mlp_ratios=[8, 8, 4, 4], depths=[2, 2, 4, 2], num_heads=[1, 2, 4, 8], windows=[0, 7, 7, 7], **kwargs)
     model.default_cfg = _cfg()
     if pretrained:
-        model = load_model_weights(model, 'scnet', kwargs)
+        model = load_model_weights(model, 'dformer', kwargs)
     return model
 
 @register_model
-def rgbd_b_v6(pretrained=False, **kwargs):
-    model = SCNet(dims=[64, 128, 256, 512], mlp_ratios=[8, 8, 4, 4], depths=[3, 3, 12, 2], num_heads=[1, 2, 4, 8], windows=[0, 7, 7, 7], **kwargs)
+def DFormer_Base(pretrained=False, **kwargs):
+    model = DFormer_model(dims=[64, 128, 256, 512], mlp_ratios=[8, 8, 4, 4], depths=[3, 3, 12, 2], num_heads=[1, 2, 4, 8], windows=[0, 7, 7, 7], **kwargs)
     model.default_cfg = _cfg()
     if pretrained:
-        model = load_model_weights(model, 'scnet', kwargs)
+        model = load_model_weights(model, 'dformer', kwargs)
     return model
 
 @register_model
-def rgbd_b_v6_kuan1_5(pretrained=False, **kwargs):
-    model = SCNet(dims=[96, 192, 288, 576], mlp_ratios=[8, 8, 4, 4], depths=[3, 3, 12, 2], num_heads=[1, 2, 4, 8], windows=[0, 7, 7, 7], **kwargs)
+def DFormer_Large(pretrained=False, **kwargs):
+    model = DFormer_model(dims=[96, 192, 288, 576], mlp_ratios=[8, 8, 4, 4], depths=[3, 3, 12, 2], num_heads=[1, 2, 4, 8], windows=[0, 7, 7, 7], **kwargs)
     model.default_cfg = _cfg()
     if pretrained:
-        model = load_model_weights(model, 'scnet', kwargs)
-    return model
-
-@register_model
-def rgbd_l_v6(pretrained=False, **kwargs):
-    model = SCNet(dims=[96, 192, 288, 576], mlp_ratios=[8, 8, 4, 4], depths=[3, 3, 12, 2], num_heads=[1, 2, 4, 8], windows=[0, 7, 7, 7], **kwargs)
-    model.default_cfg = _cfg()
-    if pretrained:
-        model = load_model_weights(model, 'scnet', kwargs)
-    return model
-
-# @register_model
-# def rgbd_b_v6(pretrained=False, **kwargs):
-#     model = SCNet(dims=[64, 128, 256, 512], mlp_ratios=[8, 8, 4, 4], depths=[3, 3, 12, 2], num_heads=[1, 2, 4, 8], windows=[0, 7, 7, 7], **kwargs)
-#     model.default_cfg = _cfg()
-#     if pretrained:
-#         model = load_model_weights(model, 'scnet', kwargs)
-#     return model
-
-@register_model
-def rgbd_l_v6_3(pretrained=False, **kwargs):
-    model = SCNet(dims=[64, 128, 256, 512], mlp_ratios=[8, 8, 4, 4], depths=[3, 5, 27, 3], num_heads=[1, 2, 4, 8], windows=[0, 7, 7, 7], **kwargs)
-    model.default_cfg = _cfg()
-    if pretrained:
-        model = load_model_weights(model, 'scnet', kwargs)
+        model = load_model_weights(model, 'dformer', kwargs)
     return model
