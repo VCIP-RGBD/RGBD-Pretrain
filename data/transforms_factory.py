@@ -7,13 +7,90 @@ import math
 
 import torch
 from torchvision import transforms
-
+import torchvision.transforms.functional as F
 from .constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD, DEFAULT_CROP_PCT
 from .auto_augment import rand_augment_transform, augment_and_mix_transform, auto_augment_transform
 from .transforms import str_to_interp_mode, str_to_pil_interp, RandomResizedCropAndInterpolation,\
     ResizeKeepRatio, CenterCropOrPad, ToNumpy
 from .random_erasing import RandomErasing
 
+
+class RandomHorizontalFlip(torch.nn.Module):
+    """Horizontally flip the given image randomly with a given probability.
+    If the image is torch Tensor, it is expected
+    to have [..., H, W] shape, where ... means an arbitrary number of leading
+    dimensions
+
+    Args:
+        p (float): probability of the image being flipped. Default value is 0.5
+    """
+
+    def __init__(self, p=0.5):
+        super().__init__()
+        #_log_api_usage_once(self)
+        self.p = p
+
+    def forward(self, img, depth):
+        """
+        Args:
+            img (PIL Image or Tensor): Image to be flipped.
+
+        Returns:
+            PIL Image or Tensor: Randomly flipped image.
+        """
+        if torch.rand(1) < self.p:
+            return F.hflip(img), F.hflip(depth)
+        return img, depth
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(p={self.p})"
+
+class Compose:
+    """Composes several transforms together. This transform does not support torchscript.
+    Please, see the note below.
+
+    Args:
+        transforms (list of ``Transform`` objects): list of transforms to compose.
+
+    Example:
+        >>> Compose([
+        >>>     transforms.CenterCrop(10),
+        >>>     transforms.PILToTensor(),
+        >>>     transforms.ConvertImageDtype(torch.float),
+        >>> ])
+
+    .. note::
+        In order to script the transformations, please use ``torch.nn.Sequential`` as below.
+
+        >>> transforms = torch.nn.Sequential(
+        >>>     transforms.CenterCrop(10),
+        >>>     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        >>> )
+        >>> scripted_transforms = torch.jit.script(transforms)
+
+        Make sure to use only scriptable transformations, i.e. that work with ``torch.Tensor``, does not require
+        `lambda` functions or ``PIL.Image``.
+
+    """
+
+    def __init__(self, transforms):
+        #if not torch.jit.is_scripting() and not torch.jit.is_tracing():
+        #    _log_api_usage_once(self)
+        self.transforms = transforms
+
+    def __call__(self, img, depth = None):
+        for t in self.transforms:
+            if depth is not None:
+                try:
+                    img, depth = t(img, depth)
+                except:
+                    print(t,'++++++++++++')
+                    assert False
+                    # print('------------')
+                # print(t,img.size, depth.size)
+            else:
+                assert False
+        return img, depth
 
 def transforms_noaug_train(
         img_size=224,
@@ -39,7 +116,7 @@ def transforms_noaug_train(
                 mean=torch.tensor(mean),
                 std=torch.tensor(std))
         ]
-    return transforms.Compose(tfl)
+    return Compose(tfl)
 
 
 def transforms_imagenet_train(
@@ -73,7 +150,7 @@ def transforms_imagenet_train(
     primary_tfl = [
         RandomResizedCropAndInterpolation(img_size, scale=scale, ratio=ratio, interpolation=interpolation)]
     if hflip > 0.:
-        primary_tfl += [transforms.RandomHorizontalFlip(p=hflip)]
+        primary_tfl += [RandomHorizontalFlip(p=hflip)]
     if vflip > 0.:
         primary_tfl += [transforms.RandomVerticalFlip(p=vflip)]
 
@@ -129,9 +206,9 @@ def transforms_imagenet_train(
                 RandomErasing(re_prob, mode=re_mode, max_count=re_count, num_splits=re_num_splits, device='cpu'))
 
     if separate:
-        return transforms.Compose(primary_tfl), transforms.Compose(secondary_tfl), transforms.Compose(final_tfl)
+        return Compose(primary_tfl), Compose(secondary_tfl), Compose(final_tfl)
     else:
-        return transforms.Compose(primary_tfl + secondary_tfl + final_tfl)
+        return Compose(primary_tfl + secondary_tfl + final_tfl)
 
 
 def transforms_imagenet_eval(
@@ -192,7 +269,7 @@ def transforms_imagenet_eval(
             )
         ]
 
-    return transforms.Compose(tfl)
+    return Compose(tfl)
 
 
 def create_transform(

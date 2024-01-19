@@ -857,7 +857,7 @@ def train_one_epoch(
     for batch_idx, (input, target) in enumerate(loader):
         # to do: visulize input RGBD-image to check if is corresponding
         if batch_idx==0 and epoch==0:
-            for i in range(128):
+            for i in range(0):
                 print('----------------visulizing----------------')
                 tensor2img = torchvision.transforms.ToPILImage()
                 print(input.shape)
