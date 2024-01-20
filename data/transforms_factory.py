@@ -14,6 +14,31 @@ from .transforms import str_to_interp_mode, str_to_pil_interp, RandomResizedCrop
     ResizeKeepRatio, CenterCropOrPad, ToNumpy
 from .random_erasing import RandomErasing
 
+class RGBD_CenterCrop(torch.nn.Module):
+
+    def __init__(self, size):
+        super().__init__()
+        self.op_ccrop = transforms.CenterCrop(size)
+
+    def forward(self, img, depth):
+        """
+        Args:
+            img (PIL Image or Tensor): Image to be cropped.
+
+        Returns:
+            PIL Image or Tensor: Cropped image.
+        """
+        return self.op_ccrop(img), self.op_ccrop(depth)
+
+class RGBD_Resize(torch.nn.Module):
+    def __init__(self, img_size, interpolation):
+        super().__init__()
+        self.transform = transforms.Resize(img_size, interpolation=str_to_interp_mode(interpolation))
+
+    def forward(self, img, depth):
+        return self.transform(img), self.transform(depth)
+
+
 
 class RandomHorizontalFlip(torch.nn.Module):
     """Horizontally flip the given image randomly with a given probability.
@@ -103,8 +128,8 @@ def transforms_noaug_train(
         # random interpolation not supported with no-aug
         interpolation = 'bilinear'
     tfl = [
-        transforms.Resize(img_size, interpolation=str_to_interp_mode(interpolation)),
-        transforms.CenterCrop(img_size)
+        RGBD_Resize(img_size=img_size, interpolation=interpolation),
+        RGBD_CenterCrop(img_size)
     ]
     if use_prefetcher:
         # prefetcher and collate will handle tensor conversion and norm
@@ -233,8 +258,8 @@ def transforms_imagenet_eval(
         # squash mode scales each edge to 1/pct of target, then crops
         # aspect ratio is not preserved, no img lost if crop_pct == 1.0
         tfl = [
-            transforms.Resize(scale_size, interpolation=str_to_interp_mode(interpolation)),
-            transforms.CenterCrop(img_size),
+            RGBD_Resize(img_size=scale_size, interpolation=interpolation),
+            RGBD_CenterCrop(img_size),
         ]
     elif crop_mode == 'border':
         # scale the longest edge of image to 1/pct of target edge, add borders to pad, then crop
@@ -250,12 +275,12 @@ def transforms_imagenet_eval(
         if scale_size[0] == scale_size[1]:
             # simple case, use torchvision built-in Resize w/ shortest edge mode (scalar size arg)
             tfl = [
-                transforms.Resize(scale_size[0], interpolation=str_to_interp_mode(interpolation))
+                RGBD_Resize(img_size=scale_size[0], interpolation=interpolation)
             ]
         else:
             # resize shortest edge to matching target dim for non-square target
             tfl = [ResizeKeepRatio(scale_size)]
-        tfl += [transforms.CenterCrop(img_size)]
+        tfl += [RGBD_CenterCrop(img_size)]
 
     if use_prefetcher:
         # prefetcher and collate will handle tensor conversion and norm

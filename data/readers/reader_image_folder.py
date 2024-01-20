@@ -78,9 +78,9 @@ class ReaderImageFolder(Reader):
         path, target = self.samples[index]
         # print(path)
         if 'train' in path:
-            depth_path='/root/siton-gpfs-archive/caojiaolon/imagenet_depth/train/'+path.split('/')[-2]+'/'+path.split('/')[-1].replace('.JPEG','_depth.jpg') 
+            depth_path='datasets/Depth_ImageNet/train/'+path.split('/')[-2]+'/'+path.split('/')[-1].replace('.JPEG','_depth.jpg') 
         else:
-            depth_path='/root/siton-gpfs-archive/caojiaolon/imagenet_depth/val/'+path.split('/')[-2]+'/'+path.split('/')[-1].replace('.JPEG','_depth.jpg') 
+            depth_path='datasets/Depth_ImageNet/val/'+path.split('/')[-2]+'/'+path.split('/')[-1].replace('.JPEG','_depth.jpg') 
         return open(path, 'rb'), target, depth_path
 
     def __len__(self):

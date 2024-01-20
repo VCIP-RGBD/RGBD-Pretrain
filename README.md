@@ -36,7 +36,7 @@ First, you need to prepare the ImageNet-1k dataset.
 We share the depth maps for the ImageNet-1K in the following links:
 
 
-| [Baidu Netdisk]() | [OneDrive]() |
+| [Baidu Netdisk](https://pan.baidu.com/s/1Ahzxzb1WL8fM0QSn0pbScw?pwd=7rz5) | [OneDrive(Coming Soon)]() |
 |  ----  | ----  |
 
 
@@ -47,13 +47,6 @@ Then, create the soft links:
 ln -s path_to_imagenet datasets/ImageNet
 ln -s path_to_imagenet_depth_maps datasets/Depth_ImageNet
 ```
-
-
-
-
-
-
-
 
 ## 2. 🚀 Train.
 
