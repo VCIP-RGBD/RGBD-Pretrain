@@ -33,10 +33,10 @@ If the above pipeline not work, You can also install following the [timm](https:
 **1.2. Prepare Datasets**
 
 First, you need to prepare the ImageNet-1k dataset.
-We share the depth maps for the ImageNet-1K in the following links:
+We share the depth maps for the ImageNet-1K (20.4G) in the following links:
 
 
-| [Baidu Netdisk](https://pan.baidu.com/s/1Ahzxzb1WL8fM0QSn0pbScw?pwd=7rz5) | [OneDrive(Coming Soon)]() |
+| [Baidu Netdisk](https://pan.baidu.com/s/1Ahzxzb1WL8fM0QSn0pbScw?pwd=7rz5) | [OneDrive](https://mailnankaieducn-my.sharepoint.com/:f:/g/personal/bowenyin_mail_nankai_edu_cn/Esnq0VtcvkNClAw42Z-wxfwBDZLtJu4xY9C-VCK94ewcrA?e=dUN78e) |
 |  ----  | ----  |
 
 
