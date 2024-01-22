@@ -18,4 +18,5 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 PORT=31929 bash distributed_train.sh 8 \
 		--remode pixel \
 		--reprob 0.25 \
 		--cutmix 1.0 \
-		--mixup 0.8 
+		--mixup 0.8 \
+  		# --resume outputs/XXXXX/last.pth.tar
