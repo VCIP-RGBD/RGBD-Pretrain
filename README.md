@@ -44,6 +44,7 @@ If the share links have any questions, please let me know (bowenyin@mail.nankai.
 Then, create the soft links:
 
 ```
+mkdir datasets
 ln -s path_to_imagenet datasets/ImageNet
 ln -s path_to_imagenet_depth_maps datasets/Depth_ImageNet
 ```
@@ -58,7 +59,8 @@ After training, the checkpoints will be saved in the path `outputs/XXX', where t
 
 >Then, the pretrained checkpoint is endowed with the capacity to encode the RGBD represetions and can be applied to various RGBD tasks. 
 
-
+If your device not have enough memory, you can use the accumulate grad via change line 14 '--grad-accum-steps 1 \' in train.sh.
+Batch size 64 in per GPU with grad-accum-steps 2 can be seen as batch size 128 in per GPU.
 
 > We invite all to contribute in making this project and RGBD representation learning more acessible and useful. If you have any questions or suggestions about our work, feel free to contact me via e-mail (bowenyin@mail.nankai.edu.cn) or raise an issue. 
 
