@@ -11,8 +11,10 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 PORT=31929 bash distributed_train.sh 8 \
 		--warmup-lr 1e-6 \
 		--warmup-epochs 5 \
 		--weight-decay 0.05 \
+		--grad-accum-steps 1 \
 		--amp \
-		--drop-path 0.1 \
+		--clip-grad 1.0 \
+		--drop-path 0.45 \
 		--lr 0.001 \
 		--aa rand-m9-mstd0.5-inc1 \
 		--remode pixel \
@@ -20,3 +22,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 PORT=31929 bash distributed_train.sh 8 \
 		--cutmix 1.0 \
 		--mixup 0.8 \
   		# --resume outputs/XXXXX/last.pth.tar
+
+
+
+
