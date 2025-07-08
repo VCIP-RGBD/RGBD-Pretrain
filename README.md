@@ -1,13 +1,8 @@
 # <p align=center>`RGBD-pretraining in DFormer`</p>
 
-> **Authors:**
-> [Bowen Yin](https://scholar.google.com/citations?user=xr_FRrEAAAAJ&hl=zh-CN&oi=sra),
-> [Xuying Zhang](https://scholar.google.com/citations?hl=zh-CN&user=huWpVyEAAAAJ),
-> [Zhongyu Li](https://scholar.google.com/citations?user=g6WHXrgAAAAJ&hl=zh-CN),
-> [Li Liu](https://scholar.google.com/citations?hl=zh-CN&user=9cMQrVsAAAAJ),
-> [Ming-Ming Cheng](https://scholar.google.com/citations?hl=zh-CN&user=huWpVyEAAAAJ),
-> [Qibin Hou*](https://scholar.google.com/citations?user=fF8OFV8AAAAJ&hl=zh-CN)
 
+If you have any question, please raise an issue at [our main repo](https://github.com/VCIP-RGBD/DFormer) or email me bowenyin@mail.nankai.edu.cn.
+So, I can reply as soon as possible.
 
 This repository provides the RGBD pretraining code of '[ICLR 2024] DFormer: Rethinking RGBD Representation Learning for Semantic Segmentation'.
 Our implementation is modified from the [timm](https://github.com/huggingface/pytorch-image-models) repository.
